@@ -1,8 +1,10 @@
 import 'package:aladinai_test/presentation/screens/show_map_screen.dart';
 import 'package:aladinai_test/presentation/utls/app_colors.dart';
+import 'package:aladinai_test/presentation/utls/asset_paths.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 
 class FindLocationHomeScreen extends StatefulWidget {
@@ -70,6 +72,7 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
       });
 
       await _getAddressFromCoordinates(position.latitude, position.longitude);
+      Get.snackbar('Successfully', 'Location fetch successful',colorText: Colors.white,backgroundColor: AppColors.themeColor);
     } catch (e) {
       setState(() {
       });
@@ -87,7 +90,7 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
         Placemark place = placeMarks[0];
         setState(() {
           _address =
-              "${place.street}, ${place.subLocality}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
+              "${place.street}, ${place.subLocality}, ${place.locality},\nDivision: ${place.administrativeArea},\nCountry:  ${place.country}";
         });
       } else {
         setState(() {
@@ -107,9 +110,10 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
       appBar: AppBar(
         leading: Padding(
           padding: const EdgeInsets.all(1.0),
-          child: Lottie.asset("assets/genie.json"),
+          child: Lottie.asset(AssetPaths.genieLottie),
         ),
-        title: Text('Current Location & Address', style: TextStyle(
+        centerTitle: true,
+        title: Text('My Location', style: TextStyle(
           color: Colors.white
         )
         ),
@@ -126,7 +130,12 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
             children: [
               SizedBox(
                   height: 200,
-                  child: Lottie.asset("assets/location.json")),
+                  child: Lottie.asset(AssetPaths.locationLottie)),
+              Text('Current Location & Address', style: TextStyle(
+                 fontSize: 18,
+                fontWeight: FontWeight.w500
+              )
+              ),
               Column(
                 children: [
                    Card(
@@ -142,6 +151,7 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
                           ? Center(child: const CircularProgressIndicator())
                           : Column(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           if (_latitude != null && _longitude != null)
                             Text(
@@ -164,7 +174,6 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
                               padding: const EdgeInsets.only(top: 15),
                               child: Text(
                                 'Address: $_address',
-                                textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontSize: 20,
                                   fontStyle: FontStyle.italic,
@@ -188,16 +197,10 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
                   ElevatedButton(
                     onPressed: () {
                       if (_latitude != null && _longitude != null) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ShowMapScreen(lat: _latitude!, long: _longitude!),
-                          ),
-                        );
+                        Get.to(() => ShowMapScreen(lat: _latitude!, long: _longitude!));
+
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Location not yet available")),
-                        );
+                        Get.snackbar('Error', "Location not yet available",backgroundColor: Colors.red,colorText: Colors.white);
                       }
                     },
                     child: const Text('Show on Map'),
