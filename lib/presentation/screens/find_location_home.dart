@@ -27,6 +27,7 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
   }
 
   Future<void> _getCurrentLocation() async {
+
     setState(() {
       _isLoading = true;
       _address = null;
@@ -40,6 +41,14 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
       setState(() {
         _isLoading = false;
       });
+
+      await _showLocationDialog(
+        title: "Location Services Disabled",
+        message: "Please turn on your device's location services.",
+        onConfirm: () async {
+          await Geolocator.openLocationSettings();
+        },
+      );
       return;
     }
 
@@ -50,6 +59,8 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
         setState(() {
           _isLoading = false;
         });
+        Get.snackbar('Permission Denied', 'Location permission is required.',
+            backgroundColor: Colors.red, colorText: Colors.white);
         return;
       }
     }
@@ -58,6 +69,14 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
       setState(() {
         _isLoading = false;
       });
+
+      await _showLocationDialog(
+        title: "Location Permission Denied Forever",
+        message: "Please enable location permission from device settings.",
+        onConfirm: () async {
+          await Geolocator.openAppSettings();
+        },
+      );
       return;
     }
 
@@ -68,14 +87,14 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
       setState(() {
         _latitude = position.latitude;
         _longitude = position.longitude;
-
       });
 
       await _getAddressFromCoordinates(position.latitude, position.longitude);
-      Get.snackbar('Successfully', 'Location fetch successful',colorText: Colors.white,backgroundColor: AppColors.themeColor);
+      Get.snackbar('Success', 'Location fetched successfully',
+          colorText: Colors.white, backgroundColor: AppColors.themeColor);
     } catch (e) {
-      setState(() {
-      });
+      Get.snackbar('Error', 'Failed to fetch location: $e',
+          backgroundColor: Colors.red, colorText: Colors.white);
     } finally {
       setState(() {
         _isLoading = false;
@@ -90,7 +109,7 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
         Placemark place = placeMarks[0];
         setState(() {
           _address =
-              "${place.street}, ${place.subLocality}, ${place.locality},\nDivision: ${place.administrativeArea},\nCountry:  ${place.country}";
+          "${place.street}, ${place.subLocality}, ${place.locality},\nDivision: ${place.administrativeArea},\nCountry:  ${place.country}";
         });
       } else {
         setState(() {
@@ -104,6 +123,8 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
     }
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,13 +134,13 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
           child: Lottie.asset(AssetPaths.genieLottie),
         ),
         centerTitle: true,
-        title: Text('My Location', style: TextStyle(
-          color: Colors.white
-        )
-        ),
+        title: const Text('My Location', style: TextStyle(color: Colors.white)),
         backgroundColor: AppColors.themeColor,
         actions: [
-          IconButton(onPressed: _getCurrentLocation, icon: Icon(Icons.my_location,color: Colors.white,))
+          IconButton(
+            onPressed: _getCurrentLocation,
+            icon: const Icon(Icons.my_location, color: Colors.white),
+          )
         ],
       ),
       body: SingleChildScrollView(
@@ -129,17 +150,17 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               SizedBox(
-                  height: 200,
-                  child: Lottie.asset(AssetPaths.locationLottie)),
-              Text('Current Location & Address', style: TextStyle(
-                 fontSize: 18,
-                fontWeight: FontWeight.w500
-              )
+                height: 200,
+                child: Lottie.asset(AssetPaths.locationLottie),
+              ),
+              const Text(
+                'Current Location & Address',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
               ),
               Column(
                 children: [
-                   Card(
-                     color: AppColors.cardColor,
+                  Card(
+                    color: AppColors.cardColor,
                     margin: const EdgeInsets.all(20),
                     elevation: 5,
                     shape: RoundedRectangleBorder(
@@ -147,8 +168,8 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(20),
-                      child:_isLoading
-                          ? Center(child: const CircularProgressIndicator())
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator())
                           : Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -188,7 +209,7 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
               ),
               const SizedBox(height: 30),
               Row(
-                mainAxisAlignment:MainAxisAlignment.spaceAround,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   ElevatedButton(
                     onPressed: _getCurrentLocation,
@@ -197,20 +218,47 @@ class _FindLocationHomeScreenState extends State<FindLocationHomeScreen> {
                   ElevatedButton(
                     onPressed: () {
                       if (_latitude != null && _longitude != null) {
-                        Get.to(() => ShowMapScreen(lat: _latitude!, long: _longitude!));
-
+                        Get.to(() => ShowMapScreen(
+                            lat: _latitude!, long: _longitude!));
                       } else {
-                        Get.snackbar('Error', "Location not yet available",backgroundColor: Colors.red,colorText: Colors.white);
+                        Get.snackbar('Error', "Location not yet available",
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white);
                       }
                     },
                     child: const Text('Show on Map'),
                   ),
                 ],
               )
-        
             ],
           ),
         ),
+      ),
+    );
+  }
+  Future<void> _showLocationDialog({
+    required String title,
+    required String message,
+    required VoidCallback onConfirm,
+  }) async {
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              onConfirm();
+            },
+            child: const Text("Open Settings"),
+          ),
+        ],
       ),
     );
   }
